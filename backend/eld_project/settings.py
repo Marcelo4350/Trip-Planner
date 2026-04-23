@@ -2,6 +2,7 @@
 Django settings for eld_project.
 """
 from pathlib import Path
+import os
 from decouple import config, Csv
 import dj_database_url
 
@@ -11,7 +12,7 @@ SECRET_KEY = config("SECRET_KEY", default="django-insecure-dev-key-change-me-in-
 DEBUG = config("DEBUG", default=True, cast=bool)
 ALLOWED_HOSTS = config(
     "ALLOWED_HOSTS",
-    default="localhost,127.0.0.1",
+    default="localhost,127.0.0.1,.onrender.com,.railway.app,.vercel.app,.fly.dev",
     cast=Csv(),
 )
 
@@ -84,8 +85,13 @@ STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# CORS — allow all in development, tighten before deploy
-CORS_ALLOW_ALL_ORIGINS = True
+# CORS
+CORS_ALLOWED_ORIGINS = config(
+    "CORS_ALLOWED_ORIGINS",
+    default="http://localhost:5173,http://127.0.0.1:5173",
+    cast=Csv(),
+)
+CORS_ALLOW_ALL_ORIGINS = config("CORS_ALLOW_ALL_ORIGINS", default=False, cast=bool)
 
 REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": [
@@ -95,3 +101,20 @@ REST_FRAMEWORK = {
         "rest_framework.parsers.JSONParser",
     ],
 }
+
+# App-specific
+USER_AGENT = config(
+    "USER_AGENT",
+    default="ELDTripPlanner/1.0 (https://github.com/eld-trip-planner; support@eldtripplanner.app)",
+)
+ORS_API_KEY = os.getenv("ORS_API_KEY", default="API_KEY")
+ORS_BASE_URL = os.getenv("ORS_BASE_URL", "https://api.openrouteservice.org")
+NOMINATIM_BASE_URL = config("NOMINATIM_BASE_URL", default="https://nominatim.openstreetmap.org")
+
+# Behind proxies (Render, etc.)
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+CSRF_TRUSTED_ORIGINS = config(
+    "CSRF_TRUSTED_ORIGINS",
+    default="https://*.onrender.com,https://*.railway.app,https://*.vercel.app,https://*.fly.dev",
+    cast=Csv(),
+)
