@@ -173,6 +173,17 @@ export default function LogSheet({ day, inputs, totalDays }: LogSheetProps): JSX
     return { ...r, segs: row };
   });
 
+  // Find the last-ending segment so we can extend it to midnight visually.
+  // The backend splits events at UTC midnight; in local timezones that aren't UTC
+  // this leaves a gap between the final event and 24h. Extending the last segment
+  // fills that gap without touching the transition connector positions.
+  const lastSeg = segments
+    .flatMap((row, rIdx) => row.segs.map((s, sIdx) => ({ rIdx, sIdx, x2: s.x2 })))
+    .reduce<{ rIdx: number; sIdx: number; x2: number } | null>(
+      (max, cur) => (max === null || cur.x2 > max.x2 ? cur : max),
+      null,
+    );
+
   const sortedEvents = [...events].sort(
     (a, b) => new Date(a.start).getTime() - new Date(b.start).getTime(),
   );
@@ -181,7 +192,9 @@ export default function LogSheet({ day, inputs, totalDays }: LogSheetProps): JSX
   sortedEvents.forEach((e, i) => {
     const next = sortedEvents[i + 1];
     if (!next || next.status === e.status) return;
-    transitions.push({ t: clamp(hourOfDay(next.start, date), 0, 24), from: e.status, to: next.status });
+    const t = clamp(hourOfDay(next.start, date), 0, 24);
+    if (t === 0) return; // nothing visible to the left — skip edge connector
+    transitions.push({ t, from: e.status, to: next.status });
   });
 
   const remarkEvents: RemarkEvent[] = [];
@@ -296,13 +309,13 @@ export default function LogSheet({ day, inputs, totalDays }: LogSheetProps): JSX
         {Array.from({ length: 25 }).map((_, h) => {
           const x = hourX(h);
           const label =
-            h === 0 ? "Midnight" : h === 12 ? "Noon" : h === 24 ? "Midnight" : h;
+            h === 0 ? "Midnight" : h === 12 ? "Noon" : h;
           return (
             <g key={h}>
               <line x1={x} x2={x} y1={TOP} y2={GRID_BOTTOM}
                 stroke={h % 6 === 0 ? "#000" : "#666"}
                 strokeWidth={h % 6 === 0 ? 1.2 : 0.6} />
-              <text x={x} y={TOP - 6} textAnchor="middle" fontSize="9" fill="#111">
+              <text x={x} y={TOP - 6} textAnchor={h === 24 ? "end" : "middle"} fontSize="9" fill="#111">
                 {label}
               </text>
             </g>
@@ -341,12 +354,16 @@ export default function LogSheet({ day, inputs, totalDays }: LogSheetProps): JSX
 
         {/* Duty-status lines */}
         {segments.map((row, rIdx) =>
-          row.segs.map((s, j) => (
-            <line key={`${row.key}-${j}`}
-              x1={hourX(s.x1)} x2={hourX(s.x2)}
-              y1={rowY(rIdx)}  y2={rowY(rIdx)}
-              stroke="#0b4bd6" strokeWidth="2.6" strokeLinecap="square" />
-          )),
+          row.segs.map((s, j) => {
+            const isLast = lastSeg !== null && rIdx === lastSeg.rIdx && j === lastSeg.sIdx;
+            const x2h = isLast && s.x2 < 24 ? 24 : s.x2;
+            return (
+              <line key={`${row.key}-${j}`}
+                x1={hourX(s.x1)} x2={hourX(x2h)}
+                y1={rowY(rIdx)}  y2={rowY(rIdx)}
+                stroke="#0b4bd6" strokeWidth="2.6" strokeLinecap="square" />
+            );
+          }),
         )}
 
         {/* Vertical transition connectors */}
