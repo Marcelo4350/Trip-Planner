@@ -1,0 +1,23 @@
+# Render blueprint for one-click deploy of the Django backend.
+# https://render.com/docs/blueprint-spec
+services:
+  - type: web
+    name: eld-trip-planner-api
+    runtime: python
+    plan: free
+    rootDir: backend
+    buildCommand: "pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate"
+    startCommand: "gunicorn eld_project.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --timeout 120"
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.3"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "False"
+      - key: ALLOWED_HOSTS
+        value: ".onrender.com,localhost,127.0.0.1"
+      - key: USER_AGENT
+        value: "ELDTripPlanner/1.0 (contact@example.com)"
+      - key: CORS_ALLOW_ALL_ORIGINS
+        value: "True"
