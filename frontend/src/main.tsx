@@ -3,6 +3,7 @@ import ReactDOM from "react-dom/client";
 import "leaflet/dist/leaflet.css";
 import "./styles.css";
 import App from "./App";
+import ThemeProvider from "./components/ThemeProvider";
 
 const rootElement: HTMLElement | null = document.getElementById("root");
 if (!rootElement) {
@@ -11,6 +12,8 @@ if (!rootElement) {
 
 ReactDOM.createRoot(rootElement).render(
   <React.StrictMode>
-    <App />
+    <ThemeProvider>
+        <App />
+    </ThemeProvider>
   </React.StrictMode>,
 );
