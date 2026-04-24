@@ -59,7 +59,7 @@ function rowY(i: number):  number { return TOP + i * ROW_H + ROW_H / 2; }
 
 function hourOfDay(iso: string, dateISO: string): number {
   const dt   = new Date(iso);
-  const base = new Date(`${dateISO}T00:00:00`);
+  const base = new Date(`${dateISO}T00:00:00Z`);
   return (dt.getTime() - base.getTime()) / (1000 * 60 * 60);
 }
 
@@ -214,7 +214,7 @@ export default function LogSheet({ day, inputs, totalDays }: LogSheetProps): JSX
       remarkEvents[i].t = remarkEvents[i - 1].t + minGap;
   }
 
-  const d     = new Date(date + "T00:00:00");
+  const d     = new Date(date + "T00:00:00Z");
   const month = String(d.getMonth() + 1).padStart(2, "0");
   const dd    = String(d.getDate()).padStart(2, "0");
   const yyyy  = d.getFullYear();
